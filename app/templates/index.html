@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RegexLab — Pattern Tester</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head><body>
+<header><a class="brand" href="/"><b>.*</b> Regex<span>Lab</span></a><small>● REGEX PLAYGROUND</small></header>
+<main>
+<section class="hero"><p class="eyebrow">DEVELOP · TEST · MATCH</p><h1>Find your pattern.<br><span>Master your regex.</span></h1>
+<p>A clean, interactive workspace to build regular expressions and see exactly what they match.</p></section>
+<section class="panel">
+<div class="heading"><h2><i>01</i> Regular expression</h2><button id="clearBtn">Clear all</button></div>
+<label for="pattern">PATTERN</label><div class="pattern"><em>/</em><input id="pattern" value="\\b\\w+@\\w+\\.\\w+\\b" spellcheck="false"><em>/</em><input id="flags" value="gi" maxlength="4" aria-label="Regex flags"></div>
+<p class="hint">Flags: <code>g</code> global · <code>i</code> ignore case · <code>m</code> multiline · <code>s</code> dot matches newline</p>
+<div class="heading"><h2><i>02</i> Test string</h2><button id="sampleBtn">Load sample</button></div>
+<label for="testText">TEXT TO SEARCH</label>
+<textarea id="testText" rows="5">Contact support@example.com or hello@regexlab.dev for help.
+This address is invalid: user@localhost</textarea>
+<div class="actions"><button class="primary" id="testBtn">▶ &nbsp; Test pattern</button><span>Results update as you type</span></div>
+<div id="error" class="error" hidden></div>
+</section>
+<section class="results">
+<article class="panel"><div class="heading"><h2><i>03</i> Match results</h2><b id="matchCount" class="count">0 MATCHES</b></div><div id="highlighted" class="highlight">Highlighted matches appear here.</div></article>
+<article class="panel"><div class="heading"><h2><i>04</i> Matches found</h2></div><div id="matchList" class="match-list">Run a pattern to see matches.</div></article>
+</section>
+<section class="tip"><b>✦ Quick tip</b><p>Try <code>\\d+</code> for numbers, <code>\\w+</code> for word characters, or <code>^Hello</code> to match the start of a line.</p></section>
+</main><footer>Built with Flask · Regex matching runs in your browser</footer>
+<script src="{{ url_for('static', filename='script.js') }}"></script></body></html>
