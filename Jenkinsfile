@@ -1,57 +1,56 @@
-// Define the Jenkins CI/CD pipeline
+
 pipeline {
-    // Run the pipeline on any available Jenkins agent
     agent any
 
-    // Define the pipeline stages
     stages {
 
-        // Check out the source code
+        // Stage 1: Confirm that the project source is ready
         stage('Checkout') {
             steps {
-                // Confirm that the source is available
                 echo 'Regex Pattern Tester source is ready'
             }
         }
 
-        // Check Python syntax
+        // Stage 2: Test the Python application
         stage('Test') {
             steps {
-                // Compile the Python file to detect syntax errors
-                sh 'python3 -m py_compile app/app.py'
+                sh '''
+                    # Check Python syntax
+                    python3 -m py_compile app/app.py
+                '''
             }
         }
 
-        // Build the Docker image and deploy the application
+        // Stage 3: Build the Docker image and deploy using Ansible
         stage('Build and Deploy') {
             steps {
-                // Run the Ansible deployment playbook
                 sh '''
-                    # Navigate to the Ansible directory
+                    # Move into the Ansible directory
                     cd ansible
 
-                    # Build the image, load it into Minikube,
-                    # and apply the Kubernetes manifests
+                    # Run the Ansible deployment playbook
                     ansible-playbook -i inventory.ini deploy.yml
                 '''
             }
         }
 
-        // Verify the new Minikube cluster
+        // Stage 4: Verify the regex-fresh Kubernetes cluster
         stage('Verify') {
             steps {
+                echo 'Verifying regex-fresh Kubernetes cluster'
+
                 sh '''
-                    # Display nodes in the fresh cluster
-                    kubectl --context=regex-fresh get nodes
+                    # Check the Kubernetes node
+                    sudo -n -u selvaa /usr/local/sbin/jenkins-regex-kubectl get nodes
 
-                    # Display application pods
-                    kubectl --context=regex-fresh get pods
+                    # Check the application deployment
+                    sudo -n -u selvaa /usr/local/sbin/jenkins-regex-kubectl get deployment devops-flask
 
-                    # Display Kubernetes Services
-                    kubectl --context=regex-fresh get services
+                    # Check the application pods
+                    sudo -n -u selvaa /usr/local/sbin/jenkins-regex-kubectl get pods
 
-                    # Confirm the application rollout completed
-                    kubectl --context=regex-fresh rollout status deployment/devops-flask --timeout=180s
+                    # Check the application service
+                    sudo -n -u selvaa /usr/local/sbin/jenkins-regex-kubectl get service devops-flask-service
                 '''
             }
         }
@@ -60,11 +59,15 @@ pipeline {
     // Display the final pipeline result
     post {
         success {
-            echo 'Regex Pattern Tester deployed successfully!'
+            echo 'Pipeline completed successfully!'
         }
 
         failure {
             echo 'Pipeline failed. Check Console Output.'
+        }
+
+        always {
+            echo 'Regex Pattern Tester pipeline finished.'
         }
     }
 }
