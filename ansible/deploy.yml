@@ -1,58 +1,81 @@
-# Build and deploy the Regex Pattern Tester application
+
+---
 - name: Build and deploy Regex Pattern Tester
-  hosts: local
+  hosts: localhost
   connection: local
   gather_facts: false
 
+  vars:
+    image_name: regex-pattern-tester
+    image_tag: v1
+    image_full: "{{ image_name }}:{{ image_tag }}"
+    minikube_profile: regex-fresh
+    deployment_name: devops-flask
+    service_name: devops-flask-service
+
   tasks:
-    # Check the Python application for syntax errors
+
+    # 1. Check Python syntax before building the image
     - name: Check Python syntax
-      ansible.builtin.command:
-        cmd: python3 -m py_compile ../app/app.py
+      command: python3 -m py_compile ../app/app.py
       args:
         chdir: "{{ playbook_dir }}"
-      changed_when: false
 
-    # Build the Docker image using the new project name
+    # 2. Build the Docker image from the app directory
     - name: Build Docker image
-      ansible.builtin.command:
-        cmd: docker build -t regex-pattern-tester:v1 ../app
+      command: docker build -t {{ image_full }} ../app
       args:
         chdir: "{{ playbook_dir }}"
 
-    # Load the image into the new Minikube profile
+    # 3. Load the image into the existing regex-fresh Minikube cluster
+    # Run the dedicated wrapper as the selvaa user
     - name: Load image into regex-fresh
-      ansible.builtin.command:
-        cmd: minikube -p regex-fresh image load regex-pattern-tester:v1
+      command: sudo -n -u selvaa /usr/local/sbin/jenkins-regex-minikube-load
 
-    # Apply the Deployment specifically to regex-fresh
-    - name: Apply Kubernetes deployment
-      ansible.builtin.command:
-        cmd: kubectl --context=regex-fresh apply -f ../k8s/deployment.yaml
+    # 4. Apply the Kubernetes Deployment manifest
+    # The wrapper explicitly uses the regex-fresh context
+    - name: Apply deployment to regex-fresh
+      command: >
+        sudo -n -u selvaa
+        /usr/local/sbin/jenkins-regex-kubectl
+        apply -f ../k8s/deployment.yaml
       args:
         chdir: "{{ playbook_dir }}"
 
-    # Apply the Service specifically to regex-fresh
-    - name: Apply Kubernetes service
-      ansible.builtin.command:
-        cmd: kubectl --context=regex-fresh apply -f ../k8s/service.yaml
+    # 5. Apply the Kubernetes Service manifest
+    - name: Apply service to regex-fresh
+      command: >
+        sudo -n -u selvaa
+        /usr/local/sbin/jenkins-regex-kubectl
+        apply -f ../k8s/service.yaml
       args:
         chdir: "{{ playbook_dir }}"
 
-    # Wait for the new cluster's Deployment to finish rolling out
-    - name: Wait for rollout
-      ansible.builtin.command:
-        cmd: kubectl --context=regex-fresh rollout status deployment/devops-flask --timeout=180s
-      changed_when: false
+    # 6. Wait until the Deployment rollout completes
+    - name: Wait for deployment rollout
+      command: >
+        sudo -n -u selvaa
+        /usr/local/sbin/jenkins-regex-kubectl
+        rollout status deployment/{{ deployment_name }}
+        --timeout=180s
 
-    # Retrieve pods from the new cluster
-    - name: Show pods
-      ansible.builtin.command:
-        cmd: kubectl --context=regex-fresh get pods
-      register: pods
-      changed_when: false
+    # 7. Display the Deployment status
+    - name: Verify deployment
+      command: >
+        sudo -n -u selvaa
+        /usr/local/sbin/jenkins-regex-kubectl
+        get deployment {{ deployment_name }}
 
-    # Display the pod status
-    - name: Display pods
-      ansible.builtin.debug:
-        var: pods.stdout
+    # 8. Display the running Pods
+    - name: Verify pods
+      command: >
+        sudo -n -u selvaa
+        /usr/local/sbin/jenkins-regex-kubectl
+        get pods
+
+    # 9. Display the Service
+    - name: Verify service
+      command: >
+        sudo -n -u selvaa
+        /usr/local/sbin/jenkins-regex-kubectl
+        get service {{ service_name }}
